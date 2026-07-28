@@ -101,3 +101,46 @@ python3 test_suite.py
 
 ---
 *Desarrollado por Cerebro Editorial - Sistema Universal de Automatización.*
+
+---
+
+## ❓ Preguntas Frecuentes (FAQ) y Solución de Problemas
+
+### 1. ¿Cómo soluciono el error de conexión a MySQL?
+**Problema:** El servidor web o el bot no pueden conectar con la base de datos.
+**Solución:**
+- Verifica que el servicio MySQL esté activo: `sudo systemctl status mysql`.
+- Asegúrate de que la `DATABASE_URL` en el archivo `.env` tenga el formato correcto: `mysql://usuario:contraseña@host:puerto/nombre_db`.
+- Si usas Docker, asegúrate de que el contenedor `zenit-db` esté en ejecución: `docker-compose ps`.
+
+### 2. ¿Qué hago si PM2 no tiene permisos para ejecutar scripts?
+**Problema:** Errores de permisos al intentar iniciar procesos con PM2.
+**Solución:**
+- Asegúrate de que los scripts tengan permisos de ejecución: `chmod +x deploy.sh setup_env.sh test_deploy.sh`.
+- Ejecuta PM2 con el usuario actual, no como root, para evitar conflictos de propiedad de archivos.
+
+### 3. ¿Cómo instalo las dependencias de Chromium en un servidor Linux (Ubuntu/Debian)?
+**Problema:** Playwright falla porque faltan librerías del sistema para Chromium.
+**Solución:**
+- Ejecuta el comando oficial de Playwright para instalar dependencias del sistema:
+  ```bash
+  playwright install-deps chromium
+  ```
+- O instala manualmente las librerías comunes: `sudo apt-get install libgbm1 libasound2 libnss3 libnspr4`.
+
+### 4. ¿Cómo reinicio las sesiones web si el bot falla en el login?
+**Problema:** El bot no puede publicar porque la sesión ha expirado o es inválida.
+**Solución:**
+- Usa el script de verificación: `python3 check_sessions.py`.
+- Si alguna sesión está marcada como `✗ INACTIVA`, abre el navegador localmente con el perfil configurado, realiza el login manualmente en la plataforma correspondiente (YouTube, TikTok, etc.) y cierra el navegador. El bot reutilizará esas cookies.
+
+### 5. ¿El sistema soporta múltiples proyectos simultáneos?
+**Sí.** Cada proyecto tiene su propio `projectId`. Puedes configurar diferentes fuentes RSS y configuraciones SEO por proyecto en la base de datos y en los archivos JSON correspondientes.
+
+### 6. ¿Cómo puedo ver los errores detallados del bot?
+**Solución:**
+- Revisa el archivo de log centralizado: `tail -f zenit_runner.log`.
+- Consulta las capturas de pantalla automáticas en `logs/screenshots/` para ver qué estaba ocurriendo en el navegador en el momento del fallo.
+
+---
+*Mantenimiento y Soporte Técnico - Cerebro Editorial.*
