@@ -93,6 +93,10 @@ export const appRouter = router({
 
   // Campaigns router
   campaigns: router({
+    list: protectedProcedure.query(async () => {
+      return await db.getAllCampaigns();
+    }),
+
     listByProject: protectedProcedure
       .input(z.object({ projectId: z.number() }))
       .query(async ({ input }) => {
@@ -343,6 +347,10 @@ export const appRouter = router({
 
   // Knowledge Base router
   knowledgeBase: router({
+    listAll: protectedProcedure.query(async () => {
+      return await db.getAllKnowledgeBaseEntries();
+    }),
+
     listByProject: protectedProcedure
       .input(z.object({ projectId: z.number() }))
       .query(async ({ input }) => {
@@ -403,6 +411,10 @@ export const appRouter = router({
 
   // Keywords router
   keywords: router({
+    listAll: protectedProcedure.query(async () => {
+      return await db.getAllKeywords();
+    }),
+
     listByProject: protectedProcedure
       .input(z.object({ projectId: z.number() }))
       .query(async ({ input }) => {
@@ -459,6 +471,10 @@ export const appRouter = router({
 
   // Editorial Memory router
   editorialMemory: router({
+    listAll: protectedProcedure.query(async () => {
+      return await db.getAllEditorialMemoryEntries();
+    }),
+
     listByProject: protectedProcedure
       .input(z.object({ projectId: z.number() }))
       .query(async ({ input }) => {

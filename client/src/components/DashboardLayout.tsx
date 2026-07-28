@@ -10,6 +10,8 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -21,15 +23,48 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import {
+  LayoutDashboard,
+  LogOut,
+  PanelLeft,
+  FolderKanban,
+  Rocket,
+  Bot,
+  FileText,
+  BookOpen,
+  KeyRound,
+  Brain,
+  Zap,
+} from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+const menuGroups = [
+  {
+    label: "General",
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+    ],
+  },
+  {
+    label: "Editorial",
+    items: [
+      { icon: FolderKanban, label: "Proyectos", path: "/projects" },
+      { icon: Rocket, label: "Campañas", path: "/campaigns" },
+      { icon: Bot, label: "Automatización", path: "/automation" },
+    ],
+  },
+  {
+    label: "Recursos",
+    items: [
+      { icon: FileText, label: "Prompts", path: "/prompts" },
+      { icon: BookOpen, label: "Base de Conocimiento", path: "/knowledge-base" },
+      { icon: KeyRound, label: "Keywords", path: "/keywords" },
+      { icon: Brain, label: "Memoria Editorial", path: "/editorial-memory" },
+    ],
+  },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -62,10 +97,10 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
+              Inicia sesión para continuar
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              El acceso a este dashboard requiere autenticación. Inicia sesión para continuar.
             </p>
           </div>
           <Button
@@ -73,7 +108,7 @@ export default function DashboardLayout({
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
-            Sign in
+            Iniciar Sesión
           </Button>
         </div>
       </div>
@@ -110,7 +145,10 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+
+  // Flatten all menu items for active matching
+  const allItems = menuGroups.flatMap(g => g.items);
+  const activeMenuItem = allItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -168,35 +206,47 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
+                    <Zap className="w-4 h-4 text-white" />
+                  </div>
                   <span className="font-semibold tracking-tight truncate">
-                    Navigation
+                    Cerebro Editorial
                   </span>
                 </div>
-              ) : null}
+              ) : (
+                <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
+              )}
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
-                const isActive = location === item.path;
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
+          <SidebarContent>
+            {menuGroups.map(group => (
+              <SidebarGroup key={group.label}>
+                {!isCollapsed && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+                <SidebarMenu>
+                  {group.items.map(item => {
+                    const isActive = location === item.path;
+                    return (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          onClick={() => setLocation(item.path)}
+                          tooltip={item.label}
+                          className={`h-10 transition-all font-normal`}
+                        >
+                          <item.icon
+                            className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                          />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroup>
+            ))}
           </SidebarContent>
 
           <SidebarFooter className="p-3">
@@ -224,7 +274,7 @@ function DashboardLayoutContent({
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
+                  <span>Cerrar sesión</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -248,7 +298,7 @@ function DashboardLayoutContent({
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1">
                   <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
+                    {activeMenuItem?.label ?? "Menú"}
                   </span>
                 </div>
               </div>

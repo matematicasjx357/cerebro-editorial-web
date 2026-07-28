@@ -503,6 +503,32 @@ export async function deleteEditorialMemoryEntry(id: number) {
   return await db.delete(editorialMemory).where(eq(editorialMemory.id, id));
 }
 
+// List all entries (not filtered by project)
+export async function getAllKnowledgeBaseEntries(): Promise<KnowledgeBaseEntry[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(knowledgeBase).orderBy(desc(knowledgeBase.createdAt));
+}
+
+export async function getAllKeywords(): Promise<Keyword[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(keywords).orderBy(desc(keywords.createdAt));
+}
+
+export async function getAllEditorialMemoryEntries(): Promise<EditorialMemoryEntry[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(editorialMemory).orderBy(desc(editorialMemory.createdAt));
+}
+
+// List all campaigns (not filtered by project)
+export async function getAllCampaigns(): Promise<Campaign[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
+}
+
 // Dashboard metrics queries
 export async function getDashboardMetrics() {
   const db = await getDb();
