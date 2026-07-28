@@ -1,0 +1,31 @@
+{
+  "wordpress": {
+    "site_url": "https://tusitio.com",
+    "username": "admin",
+    "application_password": "xxxx-xxxx-xxxx-xxxx"
+  },
+  "youtube": {
+    "client_id": "YOUR_GOOGLE_CLIENT_ID",
+    "client_secret": "YOUR_GOOGLE_CLIENT_SECRET",
+    "refresh_token": "YOUR_GOOGLE_REFRESH_TOKEN"
+  },
+  "tiktok": {
+    "client_key": "YOUR_TIKTOK_CLIENT_KEY",
+    "client_secret": "YOUR_TIKTOK_CLIENT_SECRET",
+    "access_token": "YOUR_TIKTOK_ACCESS_TOKEN"
+  },
+  "twitter": {
+    "api_key": "YOUR_TWITTER_API_KEY",
+    "api_secret": "YOUR_TWITTER_API_SECRET",
+    "access_token": "YOUR_TWITTER_ACCESS_TOKEN",
+    "access_token_secret": "YOUR_TWITTER_ACCESS_TOKEN_SECRET"
+  },
+  "facebook": {
+    "page_id": "YOUR_FACEBOOK_PAGE_ID",
+    "access_token": "YOUR_FACEBOOK_ACCESS_TOKEN"
+  },
+  "instagram": {
+    "business_account_id": "YOUR_INSTAGRAM_BUSINESS_ID",
+    "access_token": "YOUR_INSTAGRAM_ACCESS_TOKEN"
+  }
+}

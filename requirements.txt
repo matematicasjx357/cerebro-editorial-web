@@ -1,0 +1,37 @@
+# =============================================================================
+# CEREBRO EDITORIAL — Dependencias Python (bot_playwright.py)
+# =============================================================================
+#
+# Instalar: pip install -r requirements.txt
+#
+# Nota: El bot usa principalmente la librería `requests` para las APIs REST.
+# No requiere Playwright ya que todas las plataformas se publican vía API.
+# Si se necesita scraping adicional, descomentar las dependencias de Playwright.
+# =============================================================================
+
+# Dependencias principales
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Opcional: Para operaciones con videos grandes
+# Pillow>=10.0.0
+
+# Opcional: Si se requiere Playwright para scraping
+# playwright>=1.40.0
+
+# Opcional: Para YouTube Data API (alternativa a REST directo)
+# google-api-python-client>=2.100.0
+# google-auth-oauthlib>=1.1.0
+
+# Opcional: Para Twitter API v2
+# tweepy>=4.14.0
+
+# Opcional: Para Facebook/Instagram Graph API
+# facebook-sdk>=3.1.0
+
+# Opcional: Para TikTok (alternativa)
+# tiktok-uploader>=0.0.5
+
+# Desarrollo y testing
+# pytest>=7.4.0
+# pytest-cov>=4.1.0

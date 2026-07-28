@@ -287,11 +287,11 @@ export async function createAutomationJob(data: {
   type: string;
   payload?: string;
   scheduledAt?: Date;
-}) {
+}): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  return await db.insert(automationJobs).values({
+  const result = await db.insert(automationJobs).values({
     campaignId: data.campaignId,
     contentPackageId: data.contentPackageId,
     type: data.type,
@@ -299,6 +299,8 @@ export async function createAutomationJob(data: {
     scheduledAt: data.scheduledAt,
     status: "pending",
   });
+
+  return result[0]?.insertId || 0;
 }
 
 export async function updateAutomationJob(id: number, data: Partial<AutomationJob>) {
@@ -306,6 +308,13 @@ export async function updateAutomationJob(id: number, data: Partial<AutomationJo
   if (!db) throw new Error("Database not available");
 
   return await db.update(automationJobs).set(data).where(eq(automationJobs.id, id));
+}
+
+export async function deleteAutomationJob(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db.delete(automationJobs).where(eq(automationJobs.id, id));
 }
 
 // Master Prompts queries

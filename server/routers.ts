@@ -224,7 +224,103 @@ export const appRouter = router({
       }),
   }),
 
-  // Automation Jobs router
+  // Automation Engine router (dispatcher integration)
+  automation: router({
+    // Health check del motor
+    health: protectedProcedure.query(async () => {
+      const { validateEnvironment, listConfiguredPlatforms, validateCredentials } = await import("./automation-dispatcher");
+      const env = validateEnvironment();
+      const platforms = await listConfiguredPlatforms();
+      const creds = await validateCredentials();
+      return {
+        environment: env,
+        platforms,
+        credentials: creds,
+        timestamp: new Date().toISOString(),
+      };
+    }),
+
+    // Listar plataformas configuradas
+    platforms: protectedProcedure.query(async () => {
+      const { listConfiguredPlatforms } = await import("./automation-dispatcher");
+      return await listConfiguredPlatforms();
+    }),
+
+    // Validar credenciales
+    validateCredentials: protectedProcedure.query(async () => {
+      const { validateCredentials } = await import("./automation-dispatcher");
+      return await validateCredentials();
+    }),
+
+    // Estadísticas de automatización
+    stats: protectedProcedure.query(async () => {
+      const { getAutomationStats } = await import("./automation-dispatcher");
+      return await getAutomationStats();
+    }),
+
+    // Ejecutar un job inmediatamente
+    execute: protectedProcedure
+      .input(
+        z.object({
+          jobId: z.number(),
+          platform: z.string(),
+          payload: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { executeJob } = await import("./automation-dispatcher");
+        const result = await executeJob(input.jobId, input.platform as any, input.payload);
+        return result;
+      }),
+
+    // Ejecutar multicanal
+    executeMultiChannel: protectedProcedure
+      .input(
+        z.object({
+          jobId: z.number(),
+          platforms: z.array(z.string()),
+          payload: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { executeMultiChannelJob } = await import("./automation-dispatcher");
+        return await executeMultiChannelJob(input.jobId, input.platforms as any[], input.payload);
+      }),
+
+    // Crear y ejecutar un job
+    createAndRun: protectedProcedure
+      .input(
+        z.object({
+          campaignId: z.number().optional(),
+          contentPackageId: z.number().optional(),
+          type: z.string().min(1),
+          payload: z.string().min(1),
+          platforms: z.array(z.string()).optional(),
+          scheduledAt: z.date().optional(),
+          runImmediately: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { createAndRunJob } = await import("./automation-dispatcher");
+        return await createAndRunJob({
+          campaignId: input.campaignId,
+          contentPackageId: input.contentPackageId,
+          type: input.type,
+          payload: input.payload,
+          platforms: input.platforms as any[],
+          scheduledAt: input.scheduledAt,
+          runImmediately: input.runImmediately,
+        });
+      }),
+
+    // Procesar todos los jobs pendientes
+    processPending: protectedProcedure.mutation(async () => {
+      const { processPendingJobs } = await import("./automation-dispatcher");
+      return await processPendingJobs();
+    }),
+  }),
+
+  // Automation Jobs router (CRUD)
   automationJobs: router({
     list: protectedProcedure.query(async () => {
       return await db.getAllAutomationJobs();
@@ -278,6 +374,13 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         await db.updateAutomationJob(id, data);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteAutomationJob(input.id);
         return { success: true };
       }),
   }),
