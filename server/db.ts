@@ -1,4 +1,4 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, gt, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, 
@@ -538,7 +538,217 @@ export async function getAllCampaigns(): Promise<Campaign[]> {
   return await db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
 }
 
-// Dashboard metrics queries
+// Filtered queries for Dashboard
+
+export async function getCampaignsFiltered(filters: {
+  projectId?: number;
+  status?: string;
+  platform?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<Campaign[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Construir condiciones acumulativas
+  const conditions: any[] = [];
+
+  if (filters.projectId) {
+    conditions.push(eq(campaigns.projectId, filters.projectId));
+  }
+  if (filters.status && filters.status !== "all") {
+    conditions.push(eq(campaigns.status, filters.status as any));
+  }
+  if (filters.dateFrom) {
+    conditions.push(gt(campaigns.createdAt, new Date(filters.dateFrom)));
+  }
+  if (filters.dateTo) {
+    conditions.push(lt(campaigns.createdAt, new Date(filters.dateTo)));
+  }
+
+  const results = conditions.length > 0
+    ? await db.select().from(campaigns).where(and(...conditions)).orderBy(desc(campaigns.createdAt))
+    : await db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
+
+  // Filtrar por plataforma en memoria (ya que platforms es JSON)
+  if (filters.platform && filters.platform !== "all") {
+    return results.filter((c) => {
+      if (!c.platforms) return false;
+      try {
+        const platforms = JSON.parse(c.platforms);
+        return platforms.includes(filters.platform);
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  return results;
+}
+
+export async function getAutomationJobsFiltered(filters: {
+  projectId?: number;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<AutomationJob[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  let results = await db
+    .select()
+    .from(automationJobs)
+    .orderBy(desc(automationJobs.createdAt));
+
+  // Filtrar por proyecto (a través de campaignId -> projectId)
+  if (filters.projectId) {
+    const campaignIds = results
+      .map((j) => j.campaignId)
+      .filter((id): id is number => id != null);
+    if (campaignIds.length > 0) {
+      // Obtener campaignIds que pertenecen al proyecto
+      const projectCampaigns = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(eq(campaigns.projectId, filters.projectId));
+      const validCampaignIds = new Set(projectCampaigns.map((c) => c.id));
+      results = results.filter(
+        (j) =>
+          !j.campaignId || validCampaignIds.has(j.campaignId) || campaignIds.includes(j.campaignId)
+      );
+    }
+  }
+
+  // Filtrar por estado
+  if (filters.status && filters.status !== "all") {
+    results = results.filter((j) => j.status === filters.status);
+  }
+
+  // Filtrar por fechas
+  if (filters.dateFrom) {
+    results = results.filter((j) => {
+      const created = j.createdAt ? new Date(j.createdAt) : null;
+      return created && created >= new Date(filters.dateFrom!);
+    });
+  }
+  if (filters.dateTo) {
+    results = results.filter((j) => {
+      const created = j.createdAt ? new Date(j.createdAt) : null;
+      return created && created <= new Date(filters.dateTo!);
+    });
+  }
+
+  return results;
+}
+
+export async function getFilteredDashboardMetrics(filters: {
+  projectId?: number;
+  campaignStatus?: string;
+  platform?: string;
+  jobStatus?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    // Campañas filtradas
+    const campaignConditions: any[] = [];
+    if (filters.projectId) {
+      campaignConditions.push(eq(campaigns.projectId, filters.projectId));
+    }
+    const allCampaigns = campaignConditions.length > 0
+      ? await db.select().from(campaigns).where(and(...campaignConditions))
+      : await db.select().from(campaigns);
+
+    // Filtrar por estado
+    const activeCampaigns = allCampaigns.filter(
+      (c) => c.status === "active"
+    );
+
+    // Filtrar por plataforma
+    let filteredCampaigns = allCampaigns;
+    if (filters.campaignStatus && filters.campaignStatus !== "all") {
+      filteredCampaigns = filteredCampaigns.filter(
+        (c) => c.status === filters.campaignStatus
+      );
+    }
+    if (filters.platform && filters.platform !== "all") {
+      filteredCampaigns = filteredCampaigns.filter((c) => {
+        if (!c.platforms) return false;
+        try {
+          const platforms = JSON.parse(c.platforms);
+          return platforms.includes(filters.platform);
+        } catch {
+          return false;
+        }
+      });
+    }
+
+    // Filtrar por fechas
+    if (filters.dateFrom) {
+      const from = new Date(filters.dateFrom);
+      filteredCampaigns = filteredCampaigns.filter(
+        (c) => c.createdAt && new Date(c.createdAt) >= from
+      );
+    }
+    if (filters.dateTo) {
+      const to = new Date(filters.dateTo);
+      to.setDate(to.getDate() + 1); // Incluir todo el día
+      filteredCampaigns = filteredCampaigns.filter(
+        (c) => c.createdAt && new Date(c.createdAt) <= to
+      );
+    }
+
+    // Publications programadas
+    const scheduledPublications = (
+      await db.select().from(contentPackages).where(eq(contentPackages.status, "scheduled"))
+    ).length;
+
+    // Jobs filtrados
+    let allJobs = await db.select().from(automationJobs);
+    if (filters.projectId) {
+      const projectCampaignIds = (await db.select({ id: campaigns.id }).from(campaigns).where(eq(campaigns.projectId, filters.projectId))).map(c => c.id);
+      allJobs = allJobs.filter(
+        (j) => !j.campaignId || projectCampaignIds.includes(j.campaignId)
+      );
+    }
+    if (filters.jobStatus && filters.jobStatus !== "all") {
+      allJobs = allJobs.filter((j) => j.status === filters.jobStatus);
+    }
+
+    const pendingJobs = allJobs.filter((j) => j.status === "pending").length;
+    const errorJobs = allJobs.filter((j) => j.status === "error").length;
+    const inProgressJobs = allJobs.filter((j) => j.status === "in_progress").length;
+    const completedJobs = allJobs.filter((j) => j.status === "completed").length;
+
+    // Proyectos
+    let allProjects = await db.select().from(projects);
+    if (filters.projectId) {
+      allProjects = allProjects.filter((p) => p.id === filters.projectId);
+    }
+
+    return {
+      activeCampaigns: activeCampaigns.length,
+      scheduledPublications,
+      botStatus: pendingJobs > 0 || inProgressJobs > 0 ? "active" : "idle",
+      connectedChannels: 4,
+      pendingJobs,
+      errorJobs,
+      inProgressJobs,
+      completedJobs,
+      totalProjects: allProjects.length,
+      filteredCampaigns: filteredCampaigns.length,
+      totalCampaigns: allCampaigns.length,
+    };
+  } catch (error) {
+    console.error("[Database] Failed to get filtered dashboard metrics:", error);
+    return null;
+  }
+}
+
+// Dashboard metrics queries (legacy)
 export async function getDashboardMetrics() {
   const db = await getDb();
   if (!db) return null;

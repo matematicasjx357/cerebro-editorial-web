@@ -32,6 +32,76 @@ export const appRouter = router({
       }
       return metrics;
     }),
+
+    // Filtered metrics based on DashboardFilters
+    filteredMetrics: protectedProcedure
+      .input(
+        z.object({
+          projectId: z.number().nullable().optional(),
+          campaignStatus: z.string().optional(),
+          platform: z.string().optional(),
+          jobStatus: z.string().optional(),
+          dateFrom: z.string().optional(),
+          dateTo: z.string().optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        const metrics = await db.getFilteredDashboardMetrics({
+          projectId: input.projectId || undefined,
+          campaignStatus: input.campaignStatus,
+          platform: input.platform,
+          jobStatus: input.jobStatus,
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+        });
+        if (!metrics) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to fetch filtered dashboard metrics",
+          });
+        }
+        return metrics;
+      }),
+
+    // Filtered campaigns
+    filteredCampaigns: protectedProcedure
+      .input(
+        z.object({
+          projectId: z.number().optional(),
+          status: z.string().optional(),
+          platform: z.string().optional(),
+          dateFrom: z.string().optional(),
+          dateTo: z.string().optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        return await db.getCampaignsFiltered({
+          projectId: input.projectId,
+          status: input.status,
+          platform: input.platform,
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+        });
+      }),
+
+    // Filtered automation jobs
+    filteredJobs: protectedProcedure
+      .input(
+        z.object({
+          projectId: z.number().optional(),
+          status: z.string().optional(),
+          dateFrom: z.string().optional(),
+          dateTo: z.string().optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        return await db.getAutomationJobsFiltered({
+          projectId: input.projectId,
+          status: input.status,
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+        });
+      }),
   }),
 
   // Projects router
