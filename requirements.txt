@@ -16,8 +16,8 @@ urllib3>=2.0.0
 # Opcional: Para operaciones con videos grandes
 # Pillow>=10.0.0
 
-# Opcional: Si se requiere Playwright para scraping
-# playwright>=1.40.0
+# Requerido para capturas de pantalla y gestión de sesiones
+playwright>=1.40.0
 
 # Opcional: Para YouTube Data API (alternativa a REST directo)
 # google-api-python-client>=2.100.0

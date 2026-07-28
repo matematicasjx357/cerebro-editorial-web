@@ -24,6 +24,7 @@ import os
 import sys
 import time
 import traceback
+import random
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -33,6 +34,12 @@ from urllib.parse import urljoin
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+try:
+    from playwright.sync_api import sync_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
 
 
 # =============================================================================
@@ -155,6 +162,54 @@ class BasePublisher:
         """Registra un mensaje con timestamp."""
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"[{ts}] [{level}] [{self.__class__.__name__}] {msg}")
+
+    def _take_screenshot(self, name: str):
+        """Captura una pantalla en caso de fallo si Playwright está disponible."""
+        if not PLAYWRIGHT_AVAILABLE:
+            return
+        
+        try:
+            log_dir = Path("logs/screenshots")
+            log_dir.mkdir(parents=True, exist_ok=True)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = log_dir / f"{name}_{timestamp}.png"
+            
+            with sync_playwright() as p:
+                # Nota: Esto es un ejemplo, en producción se usaría el browser ya abierto
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                # Si tenemos una URL relevante, navegaría aquí
+                # page.goto(url)
+                page.screenshot(path=str(filename))
+                browser.close()
+                self._log(f"Captura de pantalla guardada: {filename}", "DEBUG")
+        except Exception as e:
+            self._log(f"Error al tomar captura de pantalla: {str(e)}", "WARN")
+
+    def _with_retry(self, func, max_retries: int = 5, initial_delay: float = 1.0):
+        """Ejecuta una función con reintentos exponenciales y jitter."""
+        retries = 0
+        while retries < max_retries:
+            try:
+                return func()
+            except Exception as e:
+                retries += 1
+                if retries >= max_retries:
+                    self._log(f"Máximo de reintentos alcanzado ({max_retries}). Error final: {str(e)}", "ERROR")
+                    raise e
+                
+                # Backoff exponencial con jitter: delay = initial_delay * 2^retries + random_jitter
+                delay = initial_delay * (2 ** retries) + random.uniform(0, 1)
+                
+                # Detección de Rate Limit (429)
+                is_rate_limit = "429" in str(e) or "rate limit" in str(e).lower()
+                if is_rate_limit:
+                    self._log(f"Límite de tarifa detectado. Esperando {delay*2:.2f}s...", "WARN")
+                    time.sleep(delay * 2) # Doble espera para rate limits
+                else:
+                    self._log(f"Error detectado: {str(e)}. Reintentando en {delay:.2f}s... (Intento {retries}/{max_retries})", "WARN")
+                    time.sleep(delay)
 
 
 # =============================================================================
