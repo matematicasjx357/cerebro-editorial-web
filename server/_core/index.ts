@@ -11,6 +11,7 @@ import { serveStatic, setupVite } from "./vite";
 import { registerScheduledRoutes } from "../scheduled-routes";
 import { registerBotRoutes } from "../bot-routes";
 import { registerRSSRoutes } from "../rss-routes";
+import { registerInterlinkingRoutes } from "../interlinking-routes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -42,6 +43,7 @@ async function startServer() {
   registerScheduledRoutes(app);
   registerBotRoutes(app);
   registerRSSRoutes(app);
+  registerInterlinkingRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",
