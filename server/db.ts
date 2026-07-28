@@ -1,4 +1,4 @@
-import { eq, desc, and, gt, lt } from "drizzle-orm";
+import { eq, desc, asc, gt, lt, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, 
@@ -800,3 +800,166 @@ export async function getDashboardMetrics() {
     return null;
   }
 }
+
+
+// ============================================================================
+// Bot-specific queries (optimized for bot_playwright.py)
+// ============================================================================
+
+/**
+ * Obtiene el siguiente job PENDING más antiguo y lo marca como in_progress
+ * de forma atómica para evitar condiciones de carrera.
+ */
+export async function getAndClaimNextPendingJob(): Promise<AutomationJob | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    // Obtener el job más antiguo con estado pending
+    const pendingJobs = await db
+      .select()
+      .from(automationJobs)
+      .where(eq(automationJobs.status, "pending"))
+      .orderBy(asc(automationJobs.createdAt))
+      .limit(1);
+
+    if (pendingJobs.length === 0) {
+      return null;
+    }
+
+    const job = pendingJobs[0];
+
+    // Actualizar el estado a in_progress y establecer startedAt
+    await db
+      .update(automationJobs)
+      .set({
+        status: "in_progress",
+        startedAt: new Date(),
+      })
+      .where(eq(automationJobs.id, job.id));
+
+    return job;
+  } catch (error) {
+    console.error("[Database] Error claiming next pending job:", error);
+    return null;
+  }
+}
+
+/**
+ * Anexa un log a un job existente de forma atómica.
+ * Concatena el nuevo log al campo logs existente.
+ */
+export async function appendJobLog(jobId: number, logMessage: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    const job = await db
+      .select()
+      .from(automationJobs)
+      .where(eq(automationJobs.id, jobId))
+      .limit(1);
+
+    if (job.length === 0) {
+      console.warn(`[Database] Job #${jobId} not found for log append`);
+      return false;
+    }
+
+    const currentLogs = job[0].logs || "";
+    const timestamp = new Date().toISOString();
+    const newLogEntry = `[${timestamp}] ${logMessage}`;
+    const updatedLogs = currentLogs ? `${currentLogs}\n${newLogEntry}` : newLogEntry;
+
+    await db
+      .update(automationJobs)
+      .set({ logs: updatedLogs })
+      .where(eq(automationJobs.id, jobId));
+
+    return true;
+  } catch (error) {
+    console.error(`[Database] Error appending log to job #${jobId}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Actualiza el estado de un job y sus logs en una sola operación.
+ * Útil para transiciones de estado paso a paso.
+ */
+export async function updateJobStatusAndLogs(
+  jobId: number,
+  status: "pending" | "in_progress" | "completed" | "error",
+  logMessage?: string
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    const job = await db
+      .select()
+      .from(automationJobs)
+      .where(eq(automationJobs.id, jobId))
+      .limit(1);
+
+    if (job.length === 0) {
+      console.warn(`[Database] Job #${jobId} not found for status update`);
+      return false;
+    }
+
+    const currentLogs = job[0].logs || "";
+    let updatedLogs = currentLogs;
+
+    if (logMessage) {
+      const timestamp = new Date().toISOString();
+      const newLogEntry = `[${timestamp}] [${status.toUpperCase()}] ${logMessage}`;
+      updatedLogs = currentLogs ? `${currentLogs}\n${newLogEntry}` : newLogEntry;
+    }
+
+    const updateData: any = {
+      status,
+      logs: updatedLogs,
+    };
+
+    if (status === "completed" || status === "error") {
+      updateData.completedAt = new Date();
+    }
+
+    await db
+      .update(automationJobs)
+      .set(updateData)
+      .where(eq(automationJobs.id, jobId));
+
+    return true;
+  } catch (error) {
+    console.error(`[Database] Error updating job #${jobId} status:`, error);
+    return false;
+  }
+}
+
+/**
+ * Obtiene todos los jobs con un estado específico ordenados por fecha de creación.
+ */
+export async function getJobsByStatusOrdered(
+  status: "pending" | "in_progress" | "completed" | "error",
+  limit?: number
+): Promise<AutomationJob[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    let query = db
+      .select()
+      .from(automationJobs)
+      .where(eq(automationJobs.status, status))
+      .orderBy(asc(automationJobs.createdAt));
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+
+    return await query;
+  } catch (error) {
+    console.error(`[Database] Error getting jobs with status ${status}:`, error);
+      return [];
+    }
+  }
