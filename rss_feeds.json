@@ -1,0 +1,40 @@
+{
+  "projects": [
+    {
+      "projectId": 1,
+      "name": "Mundos Simulados",
+      "feeds": [
+        {
+          "name": "MIT Technology Review",
+          "url": "https://www.technologyreview.com/feed/",
+          "category": "tecnología"
+        },
+        {
+          "name": "Wired Science",
+          "url": "https://www.wired.com/feed/category/science/latest/rss",
+          "category": "ciencia"
+        },
+        {
+          "name": "AI News",
+          "url": "https://www.artificialintelligence-news.com/feed/",
+          "category": "IA"
+        },
+        {
+          "name": "Singularity Hub",
+          "url": "https://singularityhub.com/feed/",
+          "category": "futurismo"
+        },
+        {
+          "name": "Futurism",
+          "url": "https://futurism.com/feed",
+          "category": "futurismo"
+        },
+        {
+          "name": "The Verge - AI",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml",
+          "category": "IA"
+        }
+      ]
+    }
+  ]
+}
