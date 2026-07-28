@@ -17,6 +17,7 @@ import MasterPrompts from "@/pages/MasterPrompts";
 import KnowledgeBase from "@/pages/KnowledgeBase";
 import Keywords from "@/pages/Keywords";
 import EditorialMemory from "@/pages/EditorialMemory";
+import JobsQueue from "@/pages/JobsQueue";
 import { Loader2 } from "lucide-react";
 
 // Protected route wrapper
@@ -59,6 +60,7 @@ function Router() {
           <Route path={"/knowledge-base"} component={() => <ProtectedRoute component={KnowledgeBase} />} />
           <Route path={"/keywords"} component={() => <ProtectedRoute component={Keywords} />} />
           <Route path={"/editorial-memory"} component={() => <ProtectedRoute component={EditorialMemory} />} />
+          <Route path={"/jobs"} component={() => <ProtectedRoute component={JobsQueue} />} />
         </>
       )}
 

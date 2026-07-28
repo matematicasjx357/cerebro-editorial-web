@@ -447,6 +447,13 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Reejecutar un job fallido
+    rerun: protectedProcedure
+      .input(z.object({ jobId: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.rerunAutomationJob(input.jobId);
+      }),
+
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {

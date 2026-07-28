@@ -317,6 +317,33 @@ export async function deleteAutomationJob(id: number) {
   return await db.delete(automationJobs).where(eq(automationJobs.id, id));
 }
 
+/**
+ * Reinicia un job fallido: resetea el estado a "pending", limpia result/logs
+ * y establece scheduledAt al momento actual para que sea procesado.
+ */
+export async function rerunAutomationJob(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Primero obtener el job para verificar que existe
+  const job = await db.select().from(automationJobs).where(eq(automationJobs.id, id)).limit(1);
+  if (job.length === 0) {
+    throw new Error(`Job #${id} not found`);
+  }
+
+  // Resetear a pending
+  await db.update(automationJobs).set({
+    status: "pending",
+    result: null,
+    logs: null,
+    completedAt: null,
+    startedAt: null,
+    scheduledAt: new Date(),
+  }).where(eq(automationJobs.id, id));
+
+  return { success: true, jobId: id };
+}
+
 // Master Prompts queries
 export async function getMasterPromptById(id: number): Promise<MasterPrompt | undefined> {
   const db = await getDb();

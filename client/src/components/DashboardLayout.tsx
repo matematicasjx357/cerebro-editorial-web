@@ -35,6 +35,7 @@ import {
   KeyRound,
   Brain,
   Zap,
+  Activity,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -54,6 +55,7 @@ const menuGroups = [
       { icon: FolderKanban, label: "Proyectos", path: "/projects" },
       { icon: Rocket, label: "Campañas", path: "/campaigns" },
       { icon: Bot, label: "Automatización", path: "/automation" },
+      { icon: Activity, label: "Cola de Jobs", path: "/jobs" },
     ],
   },
   {
